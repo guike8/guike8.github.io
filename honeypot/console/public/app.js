@@ -55,10 +55,11 @@ function resetData() {
   renderTimeline([]);
   renderRanking('top-paths', [], 'path', 'No paths recorded yet.');
   renderRanking('top-sources', [], 'source', 'No sources recorded yet.');
-  renderEmpty('The field log is quiet.', 'Unlock the console to see real sensor activity.');
+  renderEmpty('No events loaded.', 'Unlock the console to view recorded events.');
   knownEvents = [];
   hasData = false;
   renderSamples(null);
+  renderLogInputs(null, true);
   selectedId = null;
   ui.category.replaceChildren(make('option', '', 'All categories'));
   ui.category.firstChild.value = '';
@@ -164,9 +165,26 @@ function describeSensorHealth(ingest) {
   if (errors.length) return { state: 'degraded', label: 'DEGRADED', message: `Sensor ingestion needs attention: ${errors.map(([name]) => name.toUpperCase()).join(', ')}. Retained observations remain visible.` };
   if (sources.length && sources.every(([, source]) => !Number(source.files))) return { state: 'waiting', label: 'AWAITING EVENTS', message: 'Awaiting sensor events. The console is reachable, but no sensor log files have been observed yet.' };
   if (ingest.status !== 'ok') return { state: 'degraded', label: 'DEGRADED', message: 'Sensor ingestion is starting or degraded. Retained observations remain visible; check the sensor services if this persists.' };
-  return { state: 'live', label: 'LIVE', message: '' };
+  return { state: 'live', label: 'READY', message: '' };
+}
+function renderLogInputs(ingest, locked = false) {
+  for (const protocol of ['http', 'ssh']) {
+    const element = $(`sensor-${protocol}`);
+    const source = ingest?.sources?.[protocol];
+    let label = locked ? 'Locked' : 'No logs yet';
+    let state = 'waiting';
+    if (!locked && source?.status === 'error') { label = 'Error'; state = 'error'; }
+    else if (!locked && source?.status === 'ok' && Number(source.files) > 0) { label = 'Readable'; state = 'good'; }
+    element.textContent = label;
+    element.dataset.state = state;
+  }
+  const updated = $('ingest-updated');
+  const timestamp = locked || !ingest?.last_ingest_at ? null : validDate(ingest.last_ingest_at);
+  updated.textContent = locked ? 'Locked' : timestamp ? `${clock(timestamp)} UTC` : 'Not yet';
+  updated.dataset.state = locked || !timestamp ? 'waiting' : ingest?.status === 'degraded' ? 'error' : 'good';
 }
 function renderOverview(data) {
+  renderLogInputs(data.ingest);
   $('metric-total').textContent = count(data.total_events);
   $('metric-sources').textContent = count(data.sources);
   $('metric-http').textContent = count(data.http_events);
@@ -257,7 +275,7 @@ function renderTimeline(rows) {
   const validRows = rows.slice(-48).map((row) => ({ hour: row.hour, count: Math.max(0, Number(row.count) || 0) }));
   chart.replaceChildren();
   if (!validRows.length || !validRows.some((row) => row.count > 0)) {
-    chart.append(make('div', 'chart-empty', token ? 'No recorded activity in this time window.' : 'Observation begins with the first knock.'));
+    chart.append(make('div', 'chart-empty', token ? 'No activity recorded in this time window.' : 'Unlock the console to view activity.'));
     chart.setAttribute('aria-label', 'No recorded activity in the hourly time window');
   } else {
     const max = Math.max(...validRows.map((row) => row.count), 1);
@@ -293,7 +311,7 @@ function renderRanking(id, rows, key, emptyMessage) {
 function renderEmpty(title, explanation) {
   const cell = make('td', 'table-empty');
   cell.colSpan = 7;
-  cell.append(make('span', 'empty-symbol', '⌁'), make('strong', '', title), make('span', '', explanation));
+  cell.append(make('span', 'empty-symbol', '—'), make('strong', '', title), make('span', '', explanation));
   const row = make('tr'); row.append(cell); ui.body.replaceChildren(row);
 }
 function renderEvents(data) {
@@ -301,7 +319,7 @@ function renderEvents(data) {
   $('event-count').textContent = count(data.total ?? knownEvents.length);
   $('results-note').textContent = `${count(knownEvents.length)} shown · ${count(data.total ?? knownEvents.length)} matching retained events`;
   if (!knownEvents.length) {
-    renderEmpty('No encounters in view.', ui.search.value.trim() || ui.category.value || protocol !== 'all' ? 'Try a different search or filter.' : sensorHealth.message || 'No observations recorded yet. New encounters will appear here.');
+    renderEmpty('No matching events.', ui.search.value.trim() || ui.category.value || protocol !== 'all' ? 'Try a different search or filter.' : sensorHealth.message || 'No events recorded yet. New events will appear here.');
     return;
   }
   ui.body.replaceChildren(...knownEvents.map((event) => {
@@ -323,7 +341,7 @@ function renderEvents(data) {
     const control = make('td');
     const open = make('button', 'event-open', '↗');
     open.type = 'button';
-    open.setAttribute('aria-label', `Inspect ${kind.toUpperCase()} encounter at ${clock(event.timestamp)} UTC`);
+    open.setAttribute('aria-label', `Inspect ${kind.toUpperCase()} event at ${clock(event.timestamp)} UTC`);
     open.addEventListener('click', (e) => { e.stopPropagation(); inspect(event); });
     control.append(open);
     row.append(time, sensor, source, encounter, category, result, control);
@@ -336,7 +354,7 @@ function renderEvents(data) {
   }
 }
 function fillInspector(event) {
-  $('inspector-title').textContent = event.protocol === 'ssh' ? 'An SSH encounter' : 'An HTTP encounter';
+  $('inspector-title').textContent = event.protocol === 'ssh' ? 'SSH event' : 'HTTP event';
   const pairs = [['Observed', validDate(event.timestamp)?.toISOString() || '—'], ['Sensor', text(event.protocol).toUpperCase()], ['Source', event.source], ['Event', event.event], ['Category', event.category], ['Method', event.method], ['Path', event.path], ['Result', event.status], ['Session', event.session], ['User agent', event.user_agent], ['Detail', event.detail]].filter(([label, value]) => value != null && value !== '');
   $('event-details').replaceChildren(...pairs.flatMap(([label, value]) => [make('dt', '', label), make('dd', '', value)]));
   $('event-json').textContent = JSON.stringify(event, null, 2);
@@ -429,6 +447,11 @@ ui.export.addEventListener('click', async () => {
   }
 });
 $('close-inspector').addEventListener('click', () => ui.inspector.close());
+for (const link of document.querySelectorAll('.nav-item')) {
+  link.addEventListener('click', () => {
+    for (const item of document.querySelectorAll('.nav-item')) item.classList.toggle('active', item === link);
+  });
+}
 ui.inspector.addEventListener('click', (event) => {
   if (event.target === ui.inspector) {
     const box = ui.inspector.getBoundingClientRect();
