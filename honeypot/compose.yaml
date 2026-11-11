@@ -1,0 +1,104 @@
+name: nightjar
+
+x-hardened: &hardened
+  restart: "no"
+  init: true
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 96
+  logging:
+    driver: local
+    options: {max-size: 2m, max-file: "2"}
+
+services:
+  ingress:
+    <<: *hardened
+    image: haproxy:3.2-alpine@sha256:1c3568e520453cc8ba98c39501febcf450429c80e6cc27ecad779961d76e597c
+    user: "10001:10001"
+    command: [haproxy, -W, -db, -f, /usr/local/etc/haproxy/haproxy.cfg]
+    mem_limit: 80m
+    cpus: 0.30
+    ports:
+      - "${PUBLIC_BIND:-0.0.0.0}:${HTTP_PORT:-80}:8080"
+      - "${PUBLIC_BIND:-0.0.0.0}:${HTTPS_PORT:-443}:8443"
+      - "${PUBLIC_BIND:-0.0.0.0}:${SSH_PORT:-2222}:2222"
+    volumes:
+      - ./ingress.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./.secrets/frontend.pem:/run/secrets/frontend.pem:ro
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001"]
+    networks: [front, web, ssh]
+    depends_on: [web, ssh]
+
+  web:
+    <<: *hardened
+    image: nightjar-app:local
+    build: .
+    user: "10001:10001"
+    command: [node, web/main.mjs]
+    mem_limit: 144m
+    cpus: 0.35
+    environment:
+      WEB_BIND: 0.0.0.0
+      WEB_PORT: "8080"
+      WEB_LOG_PATH: /telemetry/events.json
+      TRUSTED_PROXY: "1"
+      QUARANTINE_DIR: /quarantine
+    volumes:
+      - ./state/web:/telemetry:rw
+      - ./state/quarantine/objects:/quarantine:rw
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001"]
+    networks: [web]
+
+  ssh:
+    <<: *hardened
+    image: nightjar-cowrie:local
+    build: ./cowrie
+    user: "10001:10001"
+    mem_limit: 240m
+    cpus: 0.40
+    volumes: [./state/cowrie:/cowrie/var:rw]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001
+      - /cowrie/var/lib/cowrie/downloads:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001
+      - /cowrie/var/lib/cowrie/snapshots:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001
+    networks: [ssh]
+
+  console:
+    <<: *hardened
+    image: nightjar-app:local
+    build: .
+    user: "10001:10001"
+    mem_limit: 192m
+    cpus: 0.30
+    environment:
+      CONSOLE_BIND: 0.0.0.0
+      CONSOLE_PORT: "9090"
+      CONSOLE_TOKEN_FILE: /run/secrets/console_token
+      DB_PATH: /data/events.sqlite
+      WEB_SOURCE_DIR: /sources/web
+      SSH_SOURCE_DIR: /sources/ssh
+      QUARANTINE_DIR: /quarantine
+      RETENTION_DAYS: "${RETENTION_DAYS:-7}"
+    ports: ["${CONSOLE_BIND:-127.0.0.1}:${CONSOLE_PORT:-9090}:9090"]
+    volumes:
+      - ./state/console:/data:rw
+      - ./state/web:/sources/web:ro
+      - ./state/cowrie/log/cowrie:/sources/ssh:ro
+      - ./state/quarantine/objects:/quarantine:ro
+      - ./.secrets/console_token:/run/secrets/console_token:ro
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001"]
+    networks: [management]
+
+networks:
+  front:
+    driver: bridge
+  web:
+    driver: bridge
+    internal: true
+  ssh:
+    driver: bridge
+    internal: true
+  # Management needs a published loopback port; it shares no decoy network.
+  management:
+    driver: bridge

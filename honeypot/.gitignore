@@ -1,0 +1,17 @@
+.env
+.secrets/
+state/
+*.sqlite*
+*.pkrvars.hcl
+packer-manifest.json
+image/manifest.json
+__pycache__/
+.venv/
+.pytest_cache/
+*.qcow2
+*.raw
+*.img
+*.pem
+*.key
+image/.packer.d/
+image/packer_cache/

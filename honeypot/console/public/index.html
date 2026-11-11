@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="no-referrer">
+  <title>Nightjar — Observatory</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Console identity">
+      <a class="sigil" href="#main" aria-label="Nightjar observatory">n<span>·</span></a>
+      <div class="rail-label">NIGHTJAR / 01</div>
+      <div class="rail-end" title="Private console">◎</div>
+    </aside>
+    <div class="workspace">
+      <header class="masthead">
+        <a class="wordmark" href="#main">nightjar <span>/ observatory</span></a>
+        <div class="masthead-right"><span class="private-label"><span aria-hidden="true">⌑</span> PRIVATE CONSOLE</span><button id="lock-button" class="text-button hidden" type="button">Lock console ↗</button></div>
+      </header>
+      <main id="main">
+        <section class="intro" aria-labelledby="page-title">
+          <div><div class="eyebrow"><span class="tiny-line"></span> STAGING-02 / FIELD NOTES</div><h1 id="page-title">The internet,<br><em>at your doorstep.</em></h1><p class="intro-copy">A quiet record of curious visitors, automated probes,<br class="desktop-break"> and the paths they take through the decoy.</p></div>
+          <div class="sensor-stamp"><span class="stamp-icon" aria-hidden="true">✳</span><div>PASSIVE OBSERVATION<span>HTTP + EMULATED SSH</span></div></div>
+        </section>
+
+        <section id="auth-panel" class="auth-panel" aria-labelledby="auth-title">
+          <div><div class="eyebrow">YOUR EYES ONLY</div><h2 id="auth-title">Open the observatory</h2><p>Enter the console token from your server. It stays in this tab’s memory.</p></div>
+          <form id="auth-form"><label class="sr-only" for="token">Console token</label><input id="token" type="password" name="console-token" autocomplete="off" spellcheck="false" placeholder="Console token" required minlength="16"><button class="primary-button" type="submit">Unlock <span aria-hidden="true">↗</span></button><p id="auth-error" class="auth-error" role="alert"></p></form>
+        </section>
+
+        <div class="status-bar"><div class="status-group"><span id="status" class="status locked"><span class="status-dot"></span><span id="status-label">LOCKED</span></span><span id="last-updated" class="last-updated">Waiting for authentication</span></div><div class="toolbar"><button id="refresh-button" class="icon-button" type="button" disabled>↻ <span>Refresh</span></button><button id="pause-button" class="icon-button" type="button" disabled>Ⅱ <span>Pause</span></button><button id="export-button" class="icon-button" type="button" disabled>↓ <span>Export</span></button></div></div>
+        <p id="notice" class="notice hidden" role="status"></p>
+
+        <section class="metrics" aria-label="Activity summary">
+          <article class="metric"><div class="metric-label">Recorded events <span>↗</span></div><div id="metric-total" class="metric-number">—</div><p id="metric-retention">Retained observation window</p></article>
+          <article class="metric"><div class="metric-label">Distinct sources <span>◎</span></div><div id="metric-sources" class="metric-number">—</div><p>As recorded by the sensors</p></article>
+          <article class="metric"><div class="metric-label">HTTP probes <span>⌁</span></div><div id="metric-http" class="metric-number">—</div><p>Paths, methods &amp; responses</p></article>
+          <article class="metric"><div class="metric-label">SSH events <span>⌘</span></div><div id="metric-ssh" class="metric-number">—</div><p id="metric-sessions">Emulated shell activity</p></article>
+        </section>
+
+        <div class="overview-grid">
+          <section class="panel activity-panel" aria-labelledby="activity-title"><div class="panel-heading"><div><div class="eyebrow">THE RHYTHM</div><h2 id="activity-title">Activity over time</h2></div><span class="panel-note">HOURLY · UTC</span></div><div class="chart-wrap"><div id="chart" class="chart" role="img" aria-label="No activity loaded"><div class="chart-empty">Observation begins with the first knock.</div></div><div id="chart-labels" class="chart-labels"><span>—</span><span>—</span><span>—</span></div></div></section>
+          <section class="panel paths-panel" aria-labelledby="paths-title"><div class="panel-heading"><div><div class="eyebrow">WHERE THEY LOOK</div><h2 id="paths-title">Popular paths</h2></div><span class="panel-note">HTTP</span></div><ol id="top-paths" class="ranking"><li class="ranking-empty">No paths recorded yet.</li></ol></section>
+        </div>
+
+        <section class="panel events-panel" aria-labelledby="events-title">
+          <div class="panel-heading events-heading"><div><div class="eyebrow">THE FIELD LOG</div><h2 id="events-title">Recent encounters <span id="event-count" class="count-pill">0</span></h2></div><div class="event-filters"><div class="segments" aria-label="Protocol filter"><button type="button" data-protocol="all" class="active" aria-pressed="true">All</button><button type="button" data-protocol="http" aria-pressed="false">HTTP</button><button type="button" data-protocol="ssh" aria-pressed="false">SSH</button></div><label class="sr-only" for="category">Category</label><select id="category"><option value="">All categories</option></select><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search encounters" aria-label="Search encounters" maxlength="200" autocomplete="off"></label></div></div>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Time / UTC</th><th scope="col">Sensor</th><th scope="col">Source</th><th scope="col">Encounter</th><th scope="col">Category</th><th scope="col">Result</th><th scope="col"><span class="sr-only">Details</span></th></tr></thead><tbody id="events-body"><tr><td colspan="7" class="table-empty"><span class="empty-symbol">⌁</span><strong>The field log is quiet.</strong><span>Unlock the console to see real sensor activity.</span></td></tr></tbody></table></div>
+          <div class="table-footer"><span id="results-note">No activity loaded</span><span>SELECT AN ENCOUNTER TO INSPECT ↗</span></div>
+        </section>
+
+        <section class="panel samples-panel" aria-labelledby="samples-title">
+          <div class="panel-heading"><div><div class="eyebrow">OBJECTS LEFT BEHIND</div><h2 id="samples-title">Quarantined samples <span id="sample-count" class="count-pill">0</span></h2></div><span class="sample-verdict">UNCLASSIFIED · NEVER EXECUTED</span></div>
+          <div class="sample-summary"><div><span id="sample-storage">—</span><span class="sample-storage-label"> stored / <span id="sample-capacity">—</span> capacity</span></div><span id="sample-limits">Bounded, private storage</span></div>
+          <div class="sample-meter" role="meter" aria-label="Sample storage capacity used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="sample-meter-fill"></span></div>
+          <div class="table-scroll"><table class="samples-table"><thead><tr><th scope="col">SHA-256 / object identity</th><th scope="col">Size</th><th scope="col">First observed / UTC</th></tr></thead><tbody id="samples-body"><tr><td colspan="3" class="samples-empty">No sample inventory loaded.</td></tr></tbody></table></div>
+          <div class="sample-footer"><p>Stored bytes are evidence, not a malware verdict. Samples are never rendered or executed here.</p><span id="sample-feedback" role="status"></span></div>
+        </section>
+
+        <div class="bottom-grid">
+          <section class="panel sources-panel" aria-labelledby="sources-title"><div class="panel-heading"><div><div class="eyebrow">RETURNING FOOTSTEPS</div><h2 id="sources-title">Top sources</h2></div><span class="panel-note">EVENTS</span></div><ol id="top-sources" class="ranking"><li class="ranking-empty">No sources recorded yet.</li></ol></section>
+          <section class="field-note"><div class="eyebrow"><span class="tiny-line"></span> A NOTE FROM THE FIELD</div><p>A knock is a signal,<br><em>not a verdict.</em></p><div class="field-note-copy">Scanners, search engines, link previews, and curious humans can leave similar tracks. These are observations, not attribution.</div><div class="privacy-note"><span aria-hidden="true">⌑</span> Private via SSH tunnel · no external analytics</div></section>
+        </div>
+      </main>
+      <footer><span>NIGHTJAR <span class="footer-cross">✳</span> AN INTERNET FIELD STATION</span><span id="footer-time">ALL TIMES IN UTC</span></footer>
+    </div>
+  </div>
+  <dialog id="inspector" aria-labelledby="inspector-title"><div class="dialog-heading"><div><div class="eyebrow">ENCOUNTER DETAIL</div><h2 id="inspector-title">Field note</h2></div><button id="close-inspector" class="close-button" type="button" aria-label="Close encounter details">×</button></div><dl id="event-details"></dl><details><summary>Structured event</summary><pre id="event-json"></pre></details><p class="inspector-note">Visitor-supplied content is displayed as text. Commands shown here were observed in an emulated environment.</p></dialog>
+</body>
+</html>
