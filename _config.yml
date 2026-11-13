@@ -2,4 +2,5 @@
 # Server-side Worker source belongs to the separate cloud deployment.
 exclude:
   - cloudflare
+  - dashboard
   - README.md
