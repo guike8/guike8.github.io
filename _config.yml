@@ -1,0 +1,5 @@
+# Publish the personal intro only if GitHub Pages is enabled for this private repo.
+# Server-side Worker source belongs to the separate cloud deployment.
+exclude:
+  - cloudflare
+  - README.md
