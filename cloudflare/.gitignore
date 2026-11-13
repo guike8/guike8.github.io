@@ -1,0 +1,11 @@
+node_modules/
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+dist/
+src/homepage.mjs
+src/routes.mjs
+secrets.json
+*.log
