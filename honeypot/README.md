@@ -1,8 +1,8 @@
 # Nightjar
 
-A small, real HTTP/HTTPS and emulated SSH honeypot for a dedicated VPS. Pinned **Beelzebub v3.10.0** serves the repository-root `index.html` byte-for-byte at `/` and `/index.html`, plus static HTTP decoys. Cowrie supplies SSH emulation; the Node receiver handles binary uploads. This directory provides the collector and private console.
+A small, real HTTP/HTTPS and emulated SSH honeypot. Pinned **Beelzebub v3.10.0** serves the repository-root `index.html` byte-for-byte at `/` and `/index.html`, plus static HTTP decoys. Cowrie supplies SSH emulation; the Node receiver handles binary uploads. This directory provides the collector and private console. Run it locally with a public HTTP tunnel, or on a dedicated VPS for directly reachable web and SSH ports.
 
-The recommended deployment is a reusable **DigitalOcean snapshot**, prepared with Packer. The image includes the application, fixed container images and startup configuration. The final image cleanup removes builder identity and runtime state; each launched Droplet initializes its own identities and secrets.
+For a dedicated server, the reusable **DigitalOcean snapshot** is prepared with Packer. The image includes the application, fixed container images and startup configuration. The final image cleanup removes builder identity and runtime state; each launched Droplet initializes its own identities and secrets.
 
 ## What it does
 
@@ -15,11 +15,36 @@ The recommended deployment is a reusable **DigitalOcean snapshot**, prepared wit
 
 The repository-root homepage is the single source. `scripts/build-containers.sh` stages its exact bytes into an ignored build artifact; the Beelzebub image embeds it into validated YAML handlers during the build. The image-context exporter refreshes it from root as well. Rebuild and restart the services to deploy page edits. No request chooses a filesystem path.
 
-The HTTP network is fixed to `172.30.243.0/24`. Dynamic addresses come from `172.30.243.128/25`; HAProxy owns `172.30.243.2` outside that pool. Beelzebub trusts only that proxy's `/32` for forwarded source attribution. If this subnet overlaps another network, change both Compose IPAM and the generator's trusted-proxy constant together. HAProxy overwrites supplied forwarding headers. Beelzebub, the upload receiver and SSH each have a separate internal network; none publishes a direct host port.
+The HTTP network is fixed to `172.30.243.0/24`. Dynamic addresses come from `172.30.243.128/25`; HAProxy owns `172.30.243.2` outside that pool. Beelzebub trusts only that proxy's `/32` for forwarded source attribution. If this subnet overlaps another network, change both Compose IPAM and the generator's trusted-proxy constant together. The optional tunnel network reserves `172.30.244.0/24`; its connector address `172.30.244.2` must stay synchronized between the overlay and HAProxy's connector ACL. HAProxy overwrites supplied forwarding headers. Beelzebub, the upload receiver and SSH each have a separate internal network; none publishes a direct host port.
 
 Ingress caps regular HTTP bodies at 8 KiB, URLs at 4 KiB and binary header representation at 8 KiB. Small request bodies must finish within 5 seconds, including byte-trickling clients. Raw artifact streams retain the Node service's independent 2 MiB cap and 5-second deadline. Ingress rejections do not enter Beelzebub's application event stream.
 
-GitHub Pages can publish the intro but cannot run this collector. The collecting endpoint must be the VPS IP or a custom domain pointed at the VPS. Requests and unknown paths sent to `guike8.github.io` still terminate at GitHub; a client-side redirect or analytics beacon would not capture scanners that never run JavaScript. No such beacon is included.
+GitHub Pages can publish the intro but cannot run this collector. The collecting endpoint is the tunnel URL, VPS IP, or a custom domain routed to either. Requests and unknown paths sent to `guike8.github.io` still terminate at GitHub; a client-side redirect or analytics beacon would not capture scanners that never run JavaScript. No such beacon is included.
+
+## Run without a VPS
+
+Install Docker Desktop (or Docker Engine on Linux), Docker Compose **2.24.4 or newer**, Python 3 and OpenSSL. From this checkout:
+
+```sh
+cd honeypot
+./scripts/tunnel.sh start
+```
+
+The helper builds the containers, prepares local state and random secrets, starts the stack, and prints a temporary public `https://…trycloudflare.com` address. No Cloudflare account, domain, router port forwarding, or host installation of `cloudflared` is required. The pinned official connector runs in its own container and can reach only the ingress, not the console or decoy networks. Backend egress remains blocked. All published host ports are forced to loopback even if `.env` previously used public VPS bindings.
+
+Visit `http://127.0.0.1:19090` for the private console. Run `docker compose exec -T console cat /run/secrets/console_token` locally and enter the result there. The console and SSH are not published through the tunnel. The connector uses a separate unpublished listener; HAProxy accepts a single valid `CF-Connecting-IP` only from that connector's fixed peer address, strips external forwarding headers, and supplies the validated address to the sensors. Direct HTTP cannot spoof that trust. Connector logs are disabled; the helper obtains the public hostname and readiness through a private loopback endpoint inside its network namespace.
+
+```sh
+./scripts/tunnel.sh url       # show the running public URL
+./scripts/tunnel.sh status    # show local service status
+./scripts/tunnel.sh stop      # stop public access; keep local services/data
+# To stop the entire local stack:
+docker compose -f compose.yaml -f compose.tunnel.yaml down
+```
+
+Keep the computer awake and Docker running while collecting. [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/) are temporary development endpoints: the hostname changes on a new tunnel, there is no uptime guarantee, and at most 200 requests can be in flight. A named Cloudflare Tunnel and your own domain can provide a stable hostname later. This mode observes HTTP traffic reaching that address; it does not expose ordinary SSH to Internet port scans, and Cloudflare terminates public TLS before forwarding requests. It also does not reveal a dedicated public IP for scanners to find. Do not treat test requests as organic attacker activity.
+
+Local uploads retain the application quotas and SHA-256 storage behavior below. They use a Docker bind directory rather than the VPS image's separate ext4 filesystem; there is no additional 192 MiB filesystem quota or `noexec` mount in this local mode. Samples are never executed or served by the application.
 
 ## Build our image
 
@@ -67,7 +92,7 @@ Visit `http://127.0.0.1:9090` on your computer and enter that token. It remains 
 
 Events live in SQLite, persist across service restarts and are retained for 7 days with a 50,000-event target cap enforced every minute. Beelzebub and upload spools each rotate across 3 × 5 MiB; SSH rotates across 4 × 2 MiB and applies an event-rate cap. The Beelzebub decoder discards raw lines over 64 KiB and incomplete records. Events may be dropped under sustained load; SSH rate-limit drops are surfaced as sensor events. Beelzebub's lifecycle status is not an HTTP code: the adapter derives intended static response codes from configured handler names, with method mismatches represented as 405. Cursor checkpoints and event inserts commit together, including across source-file rotation. This is a bounded observatory, not a complete forensic recorder.
 
-Samples have a 2 MiB per-file limit, 128 MiB aggregate limit, 256-object limit and four concurrent upload slots. A separate 192 MiB ext4 loop filesystem mounted with `noexec,nodev,nosuid` bounds the backing store; samples use SHA-256 filenames and mode `0400`. Files persist until the operator removes them. At capacity, new uploads are rejected. Multipart bodies and submitted filenames are not parsed; this captures raw binary HTTP uploads only. Captured bytes are not a malware verdict. No sample is executed, rendered, fetched from a supplied URL, or submitted to an external analysis service.
+Samples have a 2 MiB per-file limit, 128 MiB aggregate limit, 256-object limit and four concurrent upload slots. On the VPS image, a separate 192 MiB ext4 loop filesystem mounted with `noexec,nodev,nosuid` bounds the backing store; samples use SHA-256 filenames and mode `0400` in both deployment modes. Files persist until the operator removes them. At capacity, new uploads are rejected. Multipart bodies and submitted filenames are not parsed; this captures raw binary HTTP uploads only. Captured bytes are not a malware verdict. No sample is executed, rendered, fetched from a supplied URL, or submitted to an external analysis service.
 
 The upload service must remain a **single writer**. The console receives only read-only source and quarantine mounts and exposes inventory metadata, with no sample-download endpoint. Runtime state, images, credentials and samples are excluded from Git and from the explicit image source context. Never snapshot a collecting instance to make a distributable image.
 

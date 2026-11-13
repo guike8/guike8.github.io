@@ -23,6 +23,8 @@ Every fixture is synthetic. Static handlers do not run commands, parse visitor i
 
 Only `172.30.243.2/32` is trusted to supply a forwarded source IP. The stack assigns that address to HAProxy on the isolated HTTP network. HAProxy must overwrite client-supplied `X-Forwarded-For` and `X-Nightjar-Source`; backends must remain unpublished. The adapter prefers Beelzebub's source address resolved through that exact trusted proxy; a validated private source header is only a configured fallback.
 
+The optional local Cloudflare tunnel uses a separate unpublished HAProxy listener. Only its fixed connector peer may supply a single validated bare `CF-Connecting-IP`; direct listeners ignore that header. HAProxy then supplies the verified address through the same trusted backend path. The connector never joins the Beelzebub network.
+
 ## Logging boundary
 
 Beelzebub's upstream HTTP tracer emits raw bodies, cookies, and headers. Its `core.logging.logsPath` is therefore explicitly empty: the child writes only into the Node supervisor's pipes. The supervisor discards raw payloads and persists a bounded field allowlist through the existing rotating log spool. Neither stdout nor stderr of the raw child may be attached to Docker logging or a file.

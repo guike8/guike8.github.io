@@ -12,7 +12,7 @@ if target == source or source in target.parents:
 if target.exists() and any(target.iterdir()):
     raise SystemExit('Context directory must be empty')
 target.mkdir(parents=True, exist_ok=True)
-files = ['Dockerfile', '.dockerignore', '.env.example', 'compose.yaml', 'ingress.cfg', 'package.json']
+files = ['Dockerfile', '.dockerignore', '.env.example', 'compose.yaml', 'compose.tunnel.yaml', 'ingress.cfg', 'package.json']
 directories = ['web', 'console', 'cowrie', 'beelzebub', 'adapters', 'scripts', 'image', 'test']
 for name in files:
     shutil.copy2(source / name, target / name)
