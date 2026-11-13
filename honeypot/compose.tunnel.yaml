@@ -1,0 +1,50 @@
+# Requires Docker Compose >= 2.24.4 for !override.
+# docker compose -f compose.yaml -f compose.tunnel.yaml up -d
+services:
+  ingress:
+    ports: !override
+      - "127.0.0.1:18080:8080"
+      - "127.0.0.1:18443:8443"
+      - "127.0.0.1:12222:2222"
+    networks:
+      tunnel:
+        ipv4_address: 172.30.244.3
+
+  console:
+    ports: !override
+      - "127.0.0.1:19090:9090"
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.11.0@sha256:b94b96edf2c9c4360f8879c8580cfaa99077f19c849ec595ca2f711b27d4f344
+    command: [tunnel, --no-autoupdate, --loglevel, fatal, --metrics, "127.0.0.1:2000", --url, "http://ingress:8081"]
+    restart: "no"
+    init: true
+    user: "65532:65532"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 48
+    mem_limit: 96m
+    cpus: 0.30
+    # The helper reads the hostname from the private /quicktunnel endpoint.
+    # Suppress raw proxy-error logs that may otherwise include request URLs.
+    logging:
+      driver: none
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=8m,uid=65532,gid=65532"]
+    networks:
+      tunnel:
+        ipv4_address: 172.30.244.2
+      tunnel_egress: {}
+    depends_on: [ingress]
+
+networks:
+  tunnel:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        # Keep the connector /32 synchronized with ingress.cfg.
+        - subnet: 172.30.244.0/24
+          ip_range: 172.30.244.128/25
+  tunnel_egress:
+    driver: bridge

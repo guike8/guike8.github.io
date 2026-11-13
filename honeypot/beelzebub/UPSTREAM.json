@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/beelzebub-labs/beelzebub",
+  "release": "v3.10.0",
+  "commit": "a02d0354e19a01e97eeccaf1874419dcb05b94ca",
+  "source_archive": "https://codeload.github.com/beelzebub-labs/beelzebub/tar.gz/a02d0354e19a01e97eeccaf1874419dcb05b94ca",
+  "source_sha256": "aa141cb2004f8d5fa33da0a7863d616195feca7263fcafeb43b1a61782c6e373",
+  "license": "GPL-3.0",
+  "runtime_source_changes": []
+}

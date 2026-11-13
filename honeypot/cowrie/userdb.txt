@@ -1,0 +1,9 @@
+# These rules authenticate only into Cowrie's simulated shell.
+# No actual system account or submitted password is created or retained.
+root:x:!root
+root:x:!123456
+root:x:*
+admin:x:*
+ubuntu:x:*
+backup:x:*
+deploy:x:*

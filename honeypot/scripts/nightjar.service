@@ -1,0 +1,20 @@
+[Unit]
+Description=Nightjar honeypot observatory
+Requires=docker.service
+After=docker.service network-online.target cloud-final.service
+Wants=network-online.target
+ConditionPathExists=/opt/nightjar/compose.yaml
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/nightjar
+ExecStartPre=/opt/nightjar/scripts/setup-runtime.sh
+ExecStart=/usr/bin/docker compose up --no-build --pull never --abort-on-container-exit
+ExecStop=/usr/bin/docker compose down --timeout 10
+Restart=always
+RestartSec=5
+TimeoutStartSec=90
+TimeoutStopSec=45
+
+[Install]
+WantedBy=multi-user.target
