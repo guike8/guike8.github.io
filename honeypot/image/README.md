@@ -2,6 +2,8 @@
 
 This Packer template creates a **reusable DigitalOcean snapshot** with the application and container images installed. It creates a temporary, billable builder Droplet, provisions it without starting any honeypot services, removes per-instance state and credentials, and asks DigitalOcean to snapshot the disk. Packer normally removes its temporary builder and temporary account SSH key after completion. A failed or interrupted build can leave resources; inspect the account before retrying. The snapshot remains billable until deleted.
 
+The image includes pinned Beelzebub v3.10.0 for HTTP decoys, its sanitized telemetry supervisor, the canonical homepage, Cowrie SSH emulation, the bounded upload receiver and private console. Beelzebub is built from a checksum-verified source archive; the binary's upstream source and GPL license are included in its container.
+
 A snapshot is an image in your DigitalOcean account. This workflow does **not** produce a portable `.qcow2`, ISO, or local disk-image download, and it does not import a file through the Custom Images uploader.
 
 ## Build inputs

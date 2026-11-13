@@ -16,3 +16,4 @@ __pycache__/
 image/.packer.d/
 image/packer_cache/
 web/public/index.html
+beelzebub/generated/

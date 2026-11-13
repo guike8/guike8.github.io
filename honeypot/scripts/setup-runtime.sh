@@ -3,7 +3,7 @@ set -euo pipefail
 if [[ $(id -u) != 0 ]]; then echo 'Run this script as root on the dedicated honeypot VPS.' >&2; exit 1; fi
 cd /opt/nightjar
 umask 077
-install -d -m 0750 -o 10001 -g 10001 state/{web,console,cowrie/log/cowrie,cowrie/lib/cowrie,cowrie/run,quarantine}
+install -d -m 0750 -o 10001 -g 10001 state/{web,beelzebub,console,cowrie/log/cowrie,cowrie/lib/cowrie,cowrie/run,quarantine}
 install -d -m 0700 .secrets
 if ! grep -Eq '^[[:xdigit:]]{64}$' .secrets/console_token 2>/dev/null; then
   openssl rand -hex 32 > .secrets/console_token.new

@@ -13,12 +13,12 @@ if target.exists() and any(target.iterdir()):
     raise SystemExit('Context directory must be empty')
 target.mkdir(parents=True, exist_ok=True)
 files = ['Dockerfile', '.dockerignore', '.env.example', 'compose.yaml', 'ingress.cfg', 'package.json']
-directories = ['web', 'console', 'cowrie', 'scripts', 'image', 'test']
+directories = ['web', 'console', 'cowrie', 'beelzebub', 'adapters', 'scripts', 'image', 'test']
 for name in files:
     shutil.copy2(source / name, target / name)
 for name in directories:
     shutil.copytree(source / name, target / name, ignore=shutil.ignore_patterns(
-        '__pycache__', '*.pyc', '*.pkrvars.hcl', '.packer.d', 'packer_cache', 'packer-manifest.json', 'manifest.json',
+        '__pycache__', '*.pyc', '*.pkrvars.hcl', '.packer.d', 'packer_cache', 'packer-manifest.json', 'manifest.json', 'generated',
         '.env', '.secrets', 'state', '*.key', '*.pem', '*.qcow2', '*.img', '*.raw'))
 # The root page is the only additional repository file in this source context.
 # Always overwrite an old ignored build artifact with the current canonical page.

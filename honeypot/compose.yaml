@@ -27,8 +27,29 @@ services:
       - ./ingress.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
       - ./.secrets/frontend.pem:/run/secrets/frontend.pem:ro
     tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001"]
-    networks: [front, web, ssh]
-    depends_on: [web, ssh]
+    networks:
+      front: {}
+      web:
+        ipv4_address: 172.30.243.2
+      artifacts: {}
+      ssh: {}
+    depends_on: [beelzebub, web, ssh]
+
+  beelzebub:
+    <<: *hardened
+    image: nightjar-beelzebub:3.10.0
+    build:
+      context: .
+      dockerfile: beelzebub/Dockerfile
+    user: "10001:10001"
+    mem_limit: 192m
+    cpus: 0.35
+    environment:
+      BEELZEBUB_LOG_PATH: /telemetry/events.json
+    volumes:
+      - ./state/beelzebub:/telemetry:rw
+    tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001"]
+    networks: [web]
 
   web:
     <<: *hardened
@@ -36,8 +57,8 @@ services:
     build: .
     user: "10001:10001"
     command: [node, web/main.mjs]
-    mem_limit: 144m
-    cpus: 0.35
+    mem_limit: 96m
+    cpus: 0.20
     environment:
       WEB_BIND: 0.0.0.0
       WEB_PORT: "8080"
@@ -48,7 +69,7 @@ services:
       - ./state/web:/telemetry:rw
       - ./state/quarantine/objects:/quarantine:rw
     tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=8m,uid=10001,gid=10001"]
-    networks: [web]
+    networks: [artifacts]
 
   ssh:
     <<: *hardened
@@ -69,7 +90,7 @@ services:
     image: nightjar-app:local
     build: .
     user: "10001:10001"
-    mem_limit: 192m
+    mem_limit: 160m
     cpus: 0.30
     environment:
       CONSOLE_BIND: 0.0.0.0
@@ -77,6 +98,7 @@ services:
       CONSOLE_TOKEN_FILE: /run/secrets/console_token
       DB_PATH: /data/events.sqlite
       WEB_SOURCE_DIR: /sources/web
+      BEELZEBUB_SOURCE_DIR: /sources/beelzebub
       SSH_SOURCE_DIR: /sources/ssh
       QUARANTINE_DIR: /quarantine
       RETENTION_DAYS: "${RETENTION_DAYS:-7}"
@@ -84,6 +106,7 @@ services:
     volumes:
       - ./state/console:/data:rw
       - ./state/web:/sources/web:ro
+      - ./state/beelzebub:/sources/beelzebub:ro
       - ./state/cowrie/log/cowrie:/sources/ssh:ro
       - ./state/quarantine/objects:/quarantine:ro
       - ./.secrets/console_token:/run/secrets/console_token:ro
@@ -94,6 +117,13 @@ networks:
   front:
     driver: bridge
   web:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.243.0/24
+          ip_range: 172.30.243.128/25
+  artifacts:
     driver: bridge
     internal: true
   ssh:

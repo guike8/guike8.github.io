@@ -5,3 +5,10 @@
 !web/public/index.html
 !console/
 !console/**
+!beelzebub/
+!beelzebub/Dockerfile
+!beelzebub/generate-config.mjs
+!beelzebub/LICENSE.upstream
+!beelzebub/UPSTREAM.json
+!adapters/
+!adapters/*.mjs

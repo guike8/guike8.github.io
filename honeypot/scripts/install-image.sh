@@ -40,7 +40,7 @@ systemctl daemon-reload
 systemctl enable nightjar.service
 # Leave the Packer SSH session on 22. Launch-only cloud-init performs the port change.
 # Do not call setup-runtime, compose up or start nightjar while baking the image.
-docker image inspect nightjar-app:local nightjar-cowrie:local >/dev/null
+docker image inspect nightjar-app:local nightjar-cowrie:local nightjar-beelzebub:3.10.0 >/dev/null
 docker run --rm --network none --entrypoint node nightjar-app:local --check web/server.mjs
 docker run --rm --network none --entrypoint python nightjar-cowrie:local -m unittest discover -s /opt/observatory -p 'test_safety.py'
 install -d -m 0755 /etc/cloud/cloud.cfg.d

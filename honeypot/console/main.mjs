@@ -13,9 +13,15 @@ let state = {status:'starting', last_ingest_at:null, sources:{}};
 function ingest() {
   const sources = {};
   let failed = false;
-  for (const [protocol, directory] of [['http', process.env.WEB_SOURCE_DIR ?? '/sources/web'], ['ssh', process.env.SSH_SOURCE_DIR ?? '/sources/ssh']]) {
-    try { sources[protocol] = {status:'ok', ...ingestDirectory(store, directory, protocol)}; }
-    catch { sources[protocol] = {status:'error'}; failed = true; }
+  const webDirectory = process.env.WEB_SOURCE_DIR ?? '/sources/web';
+  const inputs = [
+    ['http', process.env.BEELZEBUB_SOURCE_DIR ?? webDirectory, 'http'],
+    ...(process.env.BEELZEBUB_SOURCE_DIR ? [['uploads', webDirectory, 'http']] : []),
+    ['ssh', process.env.SSH_SOURCE_DIR ?? '/sources/ssh', 'ssh'],
+  ];
+  for (const [input, directory, protocol] of inputs) {
+    try { sources[input] = {status:'ok', ...ingestDirectory(store, directory, protocol)}; }
+    catch { sources[input] = {status:'error'}; failed = true; }
   }
   state = {status:failed ? 'degraded' : 'ok', last_ingest_at:new Date().toISOString(), sources};
 }
