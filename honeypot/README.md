@@ -1,16 +1,20 @@
 # Nightjar
 
-A small, real HTTP/HTTPS and emulated SSH honeypot for a dedicated VPS. The personal GitHub Pages homepage remains in the repository root; this directory builds and runs separately on the VPS.
+A small, real HTTP/HTTPS and emulated SSH honeypot for a dedicated VPS. The public front door is the minimal vampire intro from the repository-root `index.html`, served byte-for-byte at `/` and `/index.html`. This directory adds the server-side collector and decoy endpoints behind that page.
 
 The recommended deployment is a reusable **DigitalOcean snapshot**, prepared with Packer. The image includes the application, fixed container images and startup configuration. The final image cleanup removes builder identity and runtime state; each launched Droplet initializes its own identities and secrets.
 
 ## What it does
 
 - HAProxy accepts HTTP, HTTPS and SSH, preserving the source address into separate isolated backends.
-- The web service presents a coherent `staging-02` archive: administration, API, fake configuration, Git and backup paths. It serves synthetic data and discards authentication bodies.
+- The web service serves the personal intro page and records incoming requests without browser analytics. Probes can discover a synthetic `staging-02` archive through administration, API, fake configuration, Git and backup paths. Authentication bodies are discarded.
 - Cowrie 3.1.6 emulates a Linux shell and filesystem. Login attempts, client fingerprints and commands are observed, while passwords and rendered diagnostic payloads are excluded from persistent logs. Forwarding, real shell execution, SCP/SFTP and outbound downloads are disabled.
 - A private console combines the two sensors into searchable events, hourly activity, recurring sources, session details and a bounded NDJSON export.
 - Raw binary uploads to `/upload` or `/api/upload` are hashed and retained as **unclassified samples**, never executed or publicly served. No URL is fetched from an attacker command.
+
+The repository-root homepage is the single source. `scripts/build-containers.sh` stages its exact bytes into an ignored build artifact before a local Docker build. The image-context exporter always copies the current root page into the image build as well. The server reads the page once at startup; rebuild and restart the service to deploy page edits. No request chooses a filesystem path.
+
+GitHub Pages can publish the intro but cannot run this collector. The collecting endpoint must be the VPS IP or a custom domain pointed at the VPS. Requests and unknown paths sent to `guike8.github.io` still terminate at GitHub; a client-side redirect or analytics beacon would not capture scanners that never run JavaScript. No such beacon is included.
 
 ## Build our image
 
@@ -67,7 +71,7 @@ The upload service must remain a **single writer**. The console receives only re
 ```sh
 cd honeypot
 npm test
-docker compose build
+./scripts/build-containers.sh
 docker run --rm --network none --entrypoint python nightjar-cowrie:local /opt/observatory/test_safety.py
 ```
 

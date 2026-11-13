@@ -1,5 +1,7 @@
 **
 !web/
-!web/**
+!web/*.mjs
+!web/public/
+!web/public/index.html
 !console/
 !console/**

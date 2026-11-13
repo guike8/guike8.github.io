@@ -10,6 +10,10 @@ import { createRotatingLog } from '../web/log.mjs';
 import { createQuarantine, QuarantineError } from '../web/quarantine.mjs';
 import { createHash } from 'node:crypto';
 import { PassThrough, Readable } from 'node:stream';
+import { spawnSync } from 'node:child_process';
+import { loadHomepage } from '../web/homepage.mjs';
+
+const canonicalHomepage = fs.readFileSync(new URL('../../index.html', import.meta.url));
 
 async function setup(t, options = {}) {
   const events = [];
@@ -32,12 +36,14 @@ function request(port, { method = 'GET', path = '/', headers = {}, body } = {}) 
   });
 }
 
-test('decoy breadcrumbs lead to coherent synthetic configuration and archives', async t => {
+test('the honeypot serves the exact canonical personal page and retains decoy endpoints', async t => {
   const { port, events } = await setup(t);
   const home = await request(port);
   assert.equal(home.status, 200);
-  assert.match(home.body, /staging-02/);
-  assert.match(home.body, /\/backup\/staging-02\.sql/);
+  assert.deepEqual(Buffer.from(home.body), canonicalHomepage);
+  assert.equal(Number(home.headers['content-length']), canonicalHomepage.length);
+  assert.equal(events[0].path, '/');
+  assert.equal(events[0].category, 'discovery');
   const env = await request(port, { path: '/.env' });
   assert.match(env.body, /DB_PASSWORD=stg_arch_/);
   assert.match(env.body, /APP_HOST=staging-02/);
@@ -48,6 +54,54 @@ test('decoy breadcrumbs lead to coherent synthetic configuration and archives', 
   assert.equal(events.length, 4);
   assert.equal(events[1].category, 'reconnaissance');
   assert.equal(events[1].timestamp, '2026-11-11T12:00:00.000Z');
+});
+
+test('the personal homepage alias and HEAD preserve exact bytes and record requests', async t => {
+  const { port, events } = await setup(t);
+  const alias = await request(port, { path: '/index.html' });
+  assert.deepEqual(Buffer.from(alias.body), canonicalHomepage);
+  const head = await request(port, { method: 'HEAD' });
+  assert.equal(head.status, 200);
+  assert.equal(head.body, '');
+  assert.equal(Number(head.headers['content-length']), canonicalHomepage.length);
+  const probe = await request(port, { path: '/.env?token=not-for-the-log', headers: { Authorization: 'Bearer also-private', Cookie: 'secret=cookie-value' } });
+  assert.equal(probe.status, 200);
+  assert.equal(events[2].category, 'reconnaissance');
+  assert.equal(events[2].path, '/.env');
+  assert.equal(events.length, 3);
+  assert.doesNotMatch(JSON.stringify(events), /not-for-the-log|also-private|cookie-value/);
+});
+
+test('homepage loading prefers canonical bytes, snapshots once and fails closed when missing', t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'nightjar-homepage-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const canonical = path.join(directory, 'canonical.html');
+  const baked = path.join(directory, 'baked.html');
+  fs.writeFileSync(canonical, '<p>current canonical page ㇏(•̀ᵥᵥ•́)ノ</p>\n');
+  fs.writeFileSync(baked, '<p>old build</p>');
+  const bytes = loadHomepage({ canonical, baked });
+  assert.deepEqual(bytes, fs.readFileSync(canonical));
+  fs.writeFileSync(canonical, '<p>next revision</p>');
+  assert.notDeepEqual(bytes, fs.readFileSync(canonical));
+  fs.unlinkSync(canonical);
+  assert.deepEqual(loadHomepage({ canonical, baked }), fs.readFileSync(baked));
+  fs.unlinkSync(baked);
+  assert.throws(() => loadHomepage({ canonical, baked }), /Homepage asset missing/);
+});
+
+test('sanitized image contexts bake the current canonical homepage automatically', t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'nightjar-page-context-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const context = path.join(directory, 'context');
+  const sourceScript = new URL('../scripts/image-context.py', import.meta.url);
+  const result = spawnSync('python3', [sourceScript.pathname, context], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(fs.readFileSync(path.join(context, 'web/public/index.html')), canonicalHomepage);
+  const packagedSync = spawnSync('python3', [path.join(context, 'scripts/sync-homepage.py')], { encoding: 'utf8' });
+  assert.equal(packagedSync.status, 0, packagedSync.stderr);
+  assert.match(packagedSync.stdout, /Packaged homepage verified/);
+  assert.deepEqual(fs.readFileSync(path.join(context, 'web/public/index.html')), canonicalHomepage);
+  for (const excluded of ['.secrets', 'state', '.git']) assert.ok(!fs.existsSync(path.join(context, excluded)));
 });
 
 test('authentication submissions are discarded and secrets never enter telemetry or responses', async t => {
