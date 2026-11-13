@@ -3,41 +3,40 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="guike8 — pentest, security research, post-training, fine-tuning, and privacy. ㇏(•̀ᵥᵥ•́)ノ">
+    <meta name="description" content="guike8 — pentest, security research, post-training, fine-tuning, privacy.">
     <meta name="color-scheme" content="dark">
     <meta name="referrer" content="no-referrer">
     <title>guike8</title>
     <style>
-      :root { color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; background: #141615; color: #f2f3ed; }
+      :root { color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; background: #120c0f; color: #ebdfe2; }
       * { box-sizing: border-box; }
       body { margin: 0; min-height: 100vh; min-height: 100svh; display: grid; place-items: center; padding: 2rem; }
       main { width: min(100%, 36rem); padding: 1rem 0; }
       .hello { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 2rem; }
-      .mark { width: 0.65rem; height: 0.65rem; background: #b5d7a1; border-radius: 50%; flex-shrink: 0; }
-      .vampire { color: #b5d7a1; font-size: clamp(1.25rem, 4vw, 1.65rem); white-space: nowrap; line-height: 1.5; }
-      .greeting { color: #b0b5ad; font-size: 0.875rem; margin: 0 0 0.65rem; }
-      h1 { margin: 0; font-size: clamp(3rem, 12vw, 5rem); letter-spacing: -0.065em; line-height: 1.1; font-weight: 500; }
-      .intro { color: #b0b5ad; margin: 1.25rem 0 1.75rem; line-height: 1.7; max-width: 31rem; }
+      .mark { width: 0.65rem; height: 0.65rem; background: #c52e42; border-radius: 50%; flex-shrink: 0; }
+      .vampire { color: #e47676; font-size: clamp(1.25rem, 4vw, 1.65rem); white-space: nowrap; line-height: 1.5; }
+      h1 { margin: 0; color: #df5555; font-size: clamp(3rem, 12vw, 5rem); letter-spacing: -0.065em; line-height: 1.1; font-weight: 500; }
+      h2 { color: #b88995; font-size: 0.875rem; font-weight: 400; margin: 2rem 0 1.1rem; }
       .interests { list-style: none; padding: 0; margin: 0 0 2.25rem; display: grid; gap: 0.6rem; line-height: 1.5; }
       .interests li { display: flex; align-items: baseline; gap: 0.9rem; }
-      .interests li::before { content: '—'; color: #65735e; }
-      a { color: #b5d7a1; text-underline-offset: 0.35em; text-decoration-thickness: 1px; line-height: 1.7; }
-      a:hover { color: #edf8e6; }
-      a:focus-visible { outline: 2px solid #b5d7a1; outline-offset: 7px; border-radius: 1px; }
-      .signoff { color: #7d8878; font-size: 0.8rem; line-height: 1.7; margin: 2.5rem 0 0; }
-      .signoff span { color: #a1b494; white-space: nowrap; }
-      @media (max-width: 420px) { body { padding: 1.5rem; } .hello { margin-bottom: 1.5rem; } .intro { font-size: 0.95rem; } }
+      .interests li::before { content: '—'; color: #a43b45; }
+      a { color: #e47676; text-underline-offset: 0.35em; text-decoration-thickness: 1px; line-height: 1.7; }
+      a:hover { color: #ffd2d2; }
+      a:focus-visible { outline: 2px solid #e47676; outline-offset: 7px; border-radius: 1px; }
+      .address { display: block; color: #c99da8; font: 0.75rem/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; user-select: all; }
+      .kaomojis { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; color: #bf6570; font-size: 0.9rem; line-height: 1.8; margin: 2.5rem 0 0; }
+      .kaomojis span { white-space: nowrap; }
+      @media (max-width: 420px) { body { padding: 1.5rem; } .hello { margin-bottom: 1.5rem; } .kaomojis { gap: 1rem; font-size: 0.8rem; } }
     </style>
   </head>
   <body>
     <main>
       <div class="hello">
         <div class="mark" aria-hidden="true"></div>
-        <span class="vampire" role="img" aria-label="a little vampire with fangs">㇏(•̀ᵥᵥ•́)ノ</span>
+        <span class="vampire" role="img" aria-label="vampire kaomoji">㇏(•̀ᵥᵥ•́)ノ</span>
       </div>
-      <p class="greeting">hi, i'm</p>
       <h1>guike8</h1>
-      <p class="intro">into security, models, and keeping things private.</p>
+      <h2>interests</h2>
       <ul class="interests" aria-label="Interests">
         <li>pentest</li>
         <li>security research</li>
@@ -45,8 +44,16 @@
         <li>fine-tuning</li>
         <li>privacy</li>
       </ul>
-      <a href="https://github.com/guike8">find me on GitHub <span aria-hidden="true">↗</span></a>
-      <p class="signoff">see you after dark. <span role="img" aria-label="a mischievous smile">(¬‿¬)</span></p>
+      <a href="https://github.com/guike8">github.com/guike8 <span aria-hidden="true">↗</span></a>
+      <section aria-label="Monero address">
+        <h2>XMR</h2>
+        <code class="address" tabindex="0">865TkQ1qLePZ5G6JCV2v6igAvBgGg6J88hpU8rrdEMTPc1q2cZN1CpRcjffjUEXsxjDsVXFpgDPZd1TahJ21UtKiJ1i1LAv</code>
+      </section>
+      <div class="kaomojis" aria-label="Kaomojis">
+        <span role="img" aria-label="vampire fangs">(•̀ᵥᵥ•́)</span>
+        <span role="img" aria-label="little devil">ψ(｀∇´)ψ</span>
+        <span role="img" aria-label="mischievous smile">(¬‿¬)</span>
+      </div>
       <!-- Retained staging routes: /archive/ · /.git/HEAD -->
     </main>
   </body>
